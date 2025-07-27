@@ -1,0 +1,28 @@
+body,html{margin:0;padding:0;height:100%;font-family:sans-serif}
+body{display:flex;align-items:center;justify-content:center;background:#eef2f5}
+.form-container{background:#fff;padding:30px;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.1);animation:fadeDown .7s ease}
+.animated-form input{width:100%;padding:12px;margin:10px 0;border-radius:8px;border:1px solid #ccc;transition:0.3s}
+.animated-form input:focus{border-color:#007bff}
+.animated-form button{width:100%;padding:12px;border:none;border-radius:8px;background:#007bff;color:#fff;font-size:16px;cursor:pointer;transition:0.3s}
+.animated-form button:hover{transform:scale(1.03);background:#0056b3}
+.error{color:#e74c3c}
+a{color:#007bff;text-decoration:none}
+
+#chat{width:90vw;max-width:600px;height:90vh;background:#fff;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,0.1);display:flex;flex-direction:column;overflow:hidden;animation:fadeUp .7s ease}
+#messages{flex:1;padding:20px;overflow:auto}
+#messages div{margin-bottom:12px}
+.user{text-align:right;color:#007bff}
+.bot{text-align:left;color:#333}
+#chat-form{display:flex;padding:10px;border-top:1px solid #ddd;background:#f9f9f9}
+#chat-form input{flex:1;padding:10px;border-radius:8px;border:1px solid #ccc}
+#chat-form button{padding:0 20px;border:none;border-radius:8px;background:#007bff;color:#fff;cursor:pointer;transition:0.3s}
+#chat-form button:hover{background:#0056b3}
+#logout-btn{margin:10px;border:none;padding:10px 20px;border-radius:8px;background:#dc3545;color:#fff;cursor:pointer;transition:0.3s;align-self:flex-end}
+#logout-btn:hover{background:#a71d2a}
+
+.typing{display:flex;gap:5px;margin-top:10px}
+.typing span{width:8px;height:8px;background:#007bff;border-radius:50%;animation:dot 1s infinite}
+@keyframes dot{0%,100%{transform: translateY(0)}50%{transform: translateY(-5px)}}
+@keyframes fadeDown{from{opacity:0;transform:translateY(-30px)}to{opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1}}
+.fade-in{animation:fadeUp .5s ease forwards}
