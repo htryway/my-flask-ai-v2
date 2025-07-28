@@ -2,5 +2,5 @@ flask
 flask-bcrypt
 flask-cors
 python-dotenv
-openai
+openai==0.28.0
 gunicorn
