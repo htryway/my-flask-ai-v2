@@ -1,3 +1,5 @@
+from dotenv import load_dotenv
+load_dotenv()
 import os
 import sqlite3
 from flask import Flask, render_template, request, jsonify, session, redirect
@@ -5,6 +7,7 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 import openai
 from flask_bcrypt import Bcrypt
+
 
 # Load env vars
 load_dotenv()
