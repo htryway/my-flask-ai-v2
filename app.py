@@ -7,22 +7,19 @@ from flask import Flask, render_template, request, jsonify, session, redirect
 from flask_cors import CORS
 import openai
 from flask_bcrypt import Bcrypt
-from openai import OpenAI
 
-# Environment variables
+# Flask setup
 app = Flask(__name__)
 CORS(app)
 app.secret_key = os.getenv("SECRET_KEY", "supersecretkey")
 
 bcrypt = Bcrypt(app)
 
-# OpenAI API setup
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    base_url=os.getenv("OPENAI_BASE_URL")  # Optional: only needed for custom endpoints like Groq
-)
+# OpenAI config (v0.28.0 syntax)
+openai.api_key = os.getenv("OPENAI_API_KEY")
+openai.api_base = os.getenv("OPENAI_BASE_URL")  # Optional
 
-# Initialize database
+# Initialize DB with WAL
 def init_db():
     with sqlite3.connect('chat.db') as conn:
         c = conn.cursor()
@@ -40,7 +37,6 @@ def init_db():
         )''')
         conn.commit()
         c.execute('PRAGMA journal_mode=WAL')
-
 init_db()
 
 # Routes
@@ -55,17 +51,14 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         input_password = request.form['password']
-
         with sqlite3.connect('chat.db') as conn:
             c = conn.cursor()
             c.execute('SELECT id, password FROM users WHERE username = ?', (username,))
             user = c.fetchone()
-
         if user and bcrypt.check_password_hash(user[1], input_password):
             session['user_id'] = user[0]
             return redirect('/')
         return render_template('login.html', error='Invalid username or password.')
-
     return render_template('login.html')
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -74,16 +67,15 @@ def register():
         username = request.form['username']
         raw_password = request.form['password']
         hashed_password = bcrypt.generate_password_hash(raw_password).decode('utf-8')
-
         try:
             with sqlite3.connect('chat.db') as conn:
                 c = conn.cursor()
-                c.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, hashed_password))
+                c.execute('INSERT INTO users (username, password) VALUES (?, ?)',
+                          (username, hashed_password))
                 conn.commit()
             return redirect('/login')
         except sqlite3.IntegrityError:
             return render_template('register.html', error='Username already exists.')
-
     return render_template('register.html')
 
 @app.route('/logout')
@@ -98,23 +90,25 @@ def ask():
 
     data = request.get_json()
     user_input = data.get('message', '').strip()
-
     if not user_input:
         return jsonify({'reply': 'Please enter a message.'}), 400
 
     try:
+        # Log user message
         with sqlite3.connect('chat.db') as conn:
             c = conn.cursor()
             c.execute('INSERT INTO messages (user_id, sender, content) VALUES (?, ?, ?)',
                       (session['user_id'], 'user', user_input))
             conn.commit()
 
-        response = client.chat.completions.create(
-            model="llama3-70b-8192",  # or "gpt-3.5-turbo", etc.
+        # Legacy OpenAI v0.28 call
+        response = openai.ChatCompletion.create(
+            model="llama3-70b-8192",  # or replace with gpt-3.5-turbo
             messages=[{"role": "user", "content": user_input}]
         )
-        bot_reply = response.choices[0].message.content
+        bot_reply = response["choices"][0]["message"]["content"]
 
+        # Log bot response
         with sqlite3.connect('chat.db') as conn:
             c = conn.cursor()
             c.execute('INSERT INTO messages (user_id, sender, content) VALUES (?, ?, ?)',
@@ -131,12 +125,10 @@ def ask():
 def history():
     if 'user_id' not in session:
         return jsonify([])
-
     with sqlite3.connect('chat.db') as conn:
         c = conn.cursor()
         c.execute('SELECT sender, content FROM messages WHERE user_id = ?', (session['user_id'],))
         rows = c.fetchall()
-
     return jsonify([{'sender': row[0], 'content': row[1]} for row in rows])
 
 if __name__ == '__main__':
