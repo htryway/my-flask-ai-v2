@@ -1,28 +1,28 @@
 from dotenv import load_dotenv
 load_dotenv()
+
 import os
 import sqlite3
 from flask import Flask, render_template, request, jsonify, session, redirect
 from flask_cors import CORS
-from dotenv import load_dotenv
 import openai
 from flask_bcrypt import Bcrypt
+from openai import OpenAI
 
-
-# Load env vars
-load_dotenv()
-
+# Environment variables
 app = Flask(__name__)
 CORS(app)
 app.secret_key = os.getenv("SECRET_KEY", "supersecretkey")
 
 bcrypt = Bcrypt(app)
 
-# OpenAI config
-openai.api_key = os.getenv("OPENAI_API_KEY")
-openai.api_base = os.getenv("OPENAI_BASE_URL")  # e.g. https://api.groq.com/openai/v1
+# OpenAI API setup
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY"),
+    base_url=os.getenv("OPENAI_BASE_URL")  # Optional: only needed for custom endpoints like Groq
+)
 
-# Initialize DB with WAL for concurrency
+# Initialize database
 def init_db():
     with sqlite3.connect('chat.db') as conn:
         c = conn.cursor()
@@ -44,7 +44,6 @@ def init_db():
 init_db()
 
 # Routes
-
 @app.route('/')
 def home():
     if 'user_id' in session:
@@ -110,11 +109,11 @@ def ask():
                       (session['user_id'], 'user', user_input))
             conn.commit()
 
-        response = openai.ChatCompletion.create(
-            model="llama3-70b-8192",
+        response = client.chat.completions.create(
+            model="llama3-70b-8192",  # or "gpt-3.5-turbo", etc.
             messages=[{"role": "user", "content": user_input}]
         )
-        bot_reply = response['choices'][0]['message']['content']
+        bot_reply = response.choices[0].message.content
 
         with sqlite3.connect('chat.db') as conn:
             c = conn.cursor()
