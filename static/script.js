@@ -13,6 +13,7 @@ function sendMessage(message) {
 
   addMessage("user", message);
   const input = document.getElementById("input");
+  const englishLevel = document.getElementById("english-level").value;
   input.value = "";
   input.focus();
 
@@ -22,14 +23,11 @@ function sendMessage(message) {
   fetch("/ask", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ message: message }),
+    body: JSON.stringify({ message: message, english_level: englishLevel }),
   })
     .then(res => res.json())
     .then(data => {
-      // Clear the Typing... text
       botMsg.innerText = "Bot: ";
-
-      // Type the message slowly
       typeMessage(botMsg, data.reply);
     })
     .catch(err => {

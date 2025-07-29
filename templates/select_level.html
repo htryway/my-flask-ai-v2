@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chatbot</title>
+  <style>
+    #chat-form {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 1em;
+      flex-wrap: wrap;
+    }
+    #input {
+      flex-grow: 1;
+      padding: 8px;
+      font-size: 1rem;
+      min-width: 200px;
+    }
+    label {
+      white-space: nowrap;
+    }
+    select, button {
+      padding: 8px;
+      font-size: 1rem;
+    }
+    #messages {
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+      font-family: sans-serif;
+      font-size: 1rem;
+      background: #f9f9f9;
+    }
+    .user {
+      color: blue;
+      margin-bottom: 5px;
+    }
+    .bot {
+      color: green;
+      margin-bottom: 5px;
+    }
+    nav {
+      margin-bottom: 1em;
+    }
+    nav a {
+      text-decoration: none;
+      color: #007bff;
+      font-weight: bold;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+
+  <nav>
+    <!-- Link to logout, change or add more links as needed -->
+    <a href="{{ url_for('logout') }}">Logout</a>
+  </nav>
+
+  <form id="chat-form">
+    <input
+      id="input"
+      type="text"
+      placeholder="Type your message here..."
+      autocomplete="off"
+      required
+    />
+    <label for="english-level">English Level:</label>
+    <select id="english-level" name="english-level">
+      <option value="Beginner">Beginner</option>
+      <option value="Intermediate" selected>Intermediate</option>
+      <option value="Advanced">Advanced</option>
+    </select>
+    <button type="submit">Send</button>
+  </form>
+
+  <div id="messages"></div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("chat-form");
+      const input = document.getElementById("input");
+      const levelSelect = document.getElementById("english-level");
+
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        const message = input.value.trim();
+        const level = levelSelect.value;
+        sendMessage(message, level);
+      });
+    });
+
+    function sendMessage(message, level) {
+      if (!message) return;
+
+      addMessage("user", message, level);
+      const input = document.getElementById("input");
+      input.value = "";
+      input.focus();
+
+      // Add temporary "Typing..." message
+      const botMsg = addMessage("bot", "Typing...");
+
+      fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: message, english_level: level }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          botMsg.innerText = "Bot: ";
+          typeMessage(botMsg, data.reply);
+        })
+        .catch((err) => {
+          console.error(err);
+          botMsg.innerText = "Bot: Oops! Something went wrong.";
+        });
+    }
+
+    function addMessage(sender, text, level = "") {
+      const chat = document.getElementById("messages");
+      const msg = document.createElement("div");
+      msg.className = sender;
+      if (sender === "user") {
+        msg.innerText = `You (${level}): ${text}`;
+      } else {
+        msg.innerText = `Bot: ${text}`;
+      }
+      chat.appendChild(msg);
+      chat.scrollTop = chat.scrollHeight;
+      return msg;
+    }
+
+    function typeMessage(el, text, speed = 25) {
+      let index = 0;
+      const fullText = text;
+      el.innerText = "Bot: ";
+
+      const interval = setInterval(() => {
+        el.innerText += fullText[index++];
+        el.scrollIntoView({ behavior: "smooth", block: "end" });
+
+        if (index >= fullText.length) {
+          clearInterval(interval);
+          speak(fullText);
+        }
+      }, speed);
+    }
+
+    function speak(text) {
+      const synth = window.speechSynthesis;
+      const utterance = new SpeechSynthesisUtterance(text);
+      synth.speak(utterance);
+    }
+  </script>
+</body>
+</html>
